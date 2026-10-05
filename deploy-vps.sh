@@ -82,8 +82,23 @@ fi
 
 cd $APP_DIR
 
+# Setup .env first
+if [ ! -f .env ]; then
+    if [ -f .env.example ]; then
+        cp .env.example .env
+    else
+        touch .env
+    fi
+fi
+
+sed -i "s|APP_URL=.*|APP_URL=https://${DOMAIN_NAME}|" .env
+sed -i "s/APP_ENV=.*/APP_ENV=production/" .env
+sed -i "s/APP_DEBUG=.*/APP_DEBUG=false/" .env
+
 # Setup Database
 echo -e "\n${YELLOW}>>> [5/9] Mengkonfigurasi Database...${NC}"
+sed -i '/^DB_/d' .env
+
 if [ "$DB_CHOICE" == "2" ]; then
     apt-get install -y mariadb-server
     systemctl start mariadb
@@ -98,18 +113,23 @@ if [ "$DB_CHOICE" == "2" ]; then
     mysql -e "GRANT ALL PRIVILEGES ON ${DB_NAME}.* TO '${DB_USER}'@'localhost';"
     mysql -e "FLUSH PRIVILEGES;"
     
-    echo -e "${GREEN}MariaDB Database '${DB_NAME}' & User '${DB_USER}' berhasil dibuat!${NC}"
-    
-    sed -i "s/DB_CONNECTION=.*/DB_CONNECTION=mysql/" .env 2>/dev/null || true
-    sed -i "s/# DB_HOST=.*/DB_HOST=127.0.0.1/" .env 2>/dev/null || true
-    sed -i "s/# DB_PORT=.*/DB_PORT=3306/" .env 2>/dev/null || true
-    sed -i "s/# DB_DATABASE=.*/DB_DATABASE=${DB_NAME}/" .env 2>/dev/null || true
-    sed -i "s/# DB_USERNAME=.*/DB_USERNAME=${DB_USER}/" .env 2>/dev/null || true
-    sed -i "s/# DB_PASSWORD=.*/DB_PASSWORD=${DB_PASS}/" .env 2>/dev/null || true
+    cat >> .env <<EOF
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=${DB_NAME}
+DB_USERNAME=${DB_USER}
+DB_PASSWORD=${DB_PASS}
+EOF
+    echo -e "${GREEN}MariaDB Database '${DB_NAME}' & User '${DB_USER}' berhasil dibuat & disambungkan!${NC}"
 else
     mkdir -p $APP_DIR/database
     touch $APP_DIR/database/database.sqlite
-    sed -i "s/DB_CONNECTION=.*/DB_CONNECTION=sqlite/" .env 2>/dev/null || true
+    cat >> .env <<EOF
+DB_CONNECTION=sqlite
+DB_DATABASE=${APP_DIR}/database/database.sqlite
+EOF
+    echo -e "${GREEN}Database SQLite aktif di ${APP_DIR}/database/database.sqlite${NC}"
 fi
 
 echo -e "\n${YELLOW}>>> [6/9] Menginstall Paket Composer & Optimasi Laravel...${NC}"
@@ -119,16 +139,9 @@ if ! composer install --no-dev --optimize-autoloader --ignore-platform-reqs; the
     composer update --no-dev --optimize-autoloader --ignore-platform-reqs
 fi
 
-if [ ! -f .env ]; then
-    cp .env.example .env
-fi
-
-sed -i "s|APP_URL=.*|APP_URL=https://${DOMAIN_NAME}|" .env
-sed -i "s/APP_ENV=.*/APP_ENV=production/" .env
-sed -i "s/APP_DEBUG=.*/APP_DEBUG=false/" .env
-
 php artisan key:generate --force
-php artisan storage:link || true
+php artisan storage:link 2>/dev/null || true
+php artisan optimize:clear
 php artisan migrate --force
 php artisan db:seed --force
 php artisan config:cache
