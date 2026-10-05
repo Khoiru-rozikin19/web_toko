@@ -113,7 +113,11 @@ else
 fi
 
 echo -e "\n${YELLOW}>>> [6/9] Menginstall Paket Composer & Optimasi Laravel...${NC}"
-composer install --no-dev --optimize-autoloader
+export COMPOSER_ALLOW_SUPERUSER=1
+if ! composer install --no-dev --optimize-autoloader --ignore-platform-reqs; then
+    echo -e "${YELLOW}Lock file berbeda platform, menjalankan composer update...${NC}"
+    composer update --no-dev --optimize-autoloader --ignore-platform-reqs
+fi
 
 if [ ! -f .env ]; then
     cp .env.example .env
