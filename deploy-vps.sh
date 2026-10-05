@@ -65,19 +65,15 @@ if ! command -v composer &> /dev/null; then
     curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 fi
 
-echo -e "\n${YELLOW}>>> [4/9] Menyiapkan Folder Project di ${APP_DIR}...${NC}"
-mkdir -p /var/www
-if [ -d "$APP_DIR" ]; then
-    echo -e "${CYAN}Direktori ${APP_DIR} sudah ada. Melakukan sinkronisasi...${NC}"
-else
-    # Copy current workspace into /var/www/web_toko or clone
-    mkdir -p $APP_DIR
-fi
+# Salin file saat ini HANYA jika dijalankan dari luar folder /var/www/web_toko
+CURRENT_PWD=$(pwd -P)
+TARGET_PWD=$(mkdir -p $APP_DIR && cd $APP_DIR && pwd -P)
 
-# Salin file saat ini jika dijalankan dari dalam project folder
-if [ -f "./artisan" ]; then
-    cp -r ./* $APP_DIR/
-    cp -r ./.env* $APP_DIR/ 2>/dev/null || true
+if [ "$CURRENT_PWD" != "$TARGET_PWD" ]; then
+    if [ -f "./artisan" ]; then
+        cp -r ./* $APP_DIR/ 2>/dev/null || true
+        cp -r ./.env* $APP_DIR/ 2>/dev/null || true
+    fi
 fi
 
 cd $APP_DIR
