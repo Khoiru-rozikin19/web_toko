@@ -444,9 +444,10 @@ menu_maintenance() {
         echo "4. Restart Queue Worker (Supervisor)"
         echo "5. Backup Database"
         echo "6. Lihat Live Log Laravel (storage/logs/laravel.log)"
+        echo "7. Tarik Pembaruan Terbaru dari GitHub (Git Pull & Update)"
         echo "0. Kembali ke Menu Utama"
         echo ""
-        read -p "Pilih menu [0-6]: " m_opt
+        read -p "Pilih menu [0-7]: " m_opt
 
         case $m_opt in
             1)
@@ -487,6 +488,11 @@ menu_maintenance() {
             6)
                 echo -e "\n${CYAN}Menampilkan 30 baris log terakhir (Tekan Ctrl+C untuk keluar):${NC}\n"
                 tail -n 30 -f storage/logs/laravel.log 2>/dev/null || echo "Belum ada file log."
+                pause
+                ;;
+            7)
+                echo -e "\n${CYAN}Menarik update dari GitHub...${NC}"
+                bash update-vps.sh 2>/dev/null || (git pull && composer install --no-dev --optimize-autoloader --ignore-platform-reqs && php artisan migrate --force && php artisan optimize)
                 pause
                 ;;
             0)
