@@ -140,10 +140,11 @@ if ! composer install --no-dev --optimize-autoloader --ignore-platform-reqs; the
 fi
 
 php artisan key:generate --force
+php artisan config:clear
 php artisan storage:link 2>/dev/null || true
-php artisan optimize:clear
 php artisan migrate --force
 php artisan db:seed --force
+php artisan optimize:clear
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
